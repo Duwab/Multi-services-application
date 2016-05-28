@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html ng-app="app">
+    <head>
+        <title>jwt authentication</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        <div ng-controller="MainCtrl as vm">
+            <a href="/embed">Back</a>
+            <h1>Auth with JWT</h1>
+            <div ng-hide="vm.user">
+                <form ng-submit="vm.login(vm.username, vm.password)">
+                    <label>Username : <input type="text" ng-model="vm.username"/></label><br>
+                    <label>Password : <input type="password" ng-model="vm.password"/></label><br>
+                    <button type="submit">Login</button><br>
+                </form>
+            </div>
+            <div ng-show="vm.user">
+                <p>Hello {{vm.user.username || 'nobody'}}</p>
+                <button ng-click="vm.logout()">Logout</button><br><br>
+            </div>
+        </div>
+                
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js"></script>
+        <script>
+            (function(){
+                'use strict';
+                var app = angular.module("app", [], function config($httpProvider){
+                        $httpProvider.interceptors.push('AuthInterceptor');
+                });
+
+                app.constant('API_URL', 'http://52.29.196.28/jwt');
+
+                app.controller('MainCtrl', function(UserFactory){
+                        'use strict';
+                        var vm = this;
+                        this.login = login;
+                        this.logout = logout;
+
+                        //initialization
+                        UserFactory.getUser().then(function success(response){
+                                console.log("gn", response.data);
+                                vm.user = response.data;
+                        });
+
+                        function login(username, password){
+                                UserFactory.login(username, password).then(function success(response){
+                                        console.log("your token", response.data.token);
+                                        UserFactory.getUser().then(function(data){
+                                            vm.user = data.data;
+                                        });
+                                }, handleError);
+                        }
+
+                        function logout(username, password){
+                                UserFactory.logout();
+                                vm.user = undefined;
+                        }
+
+                        function handleError(response){
+                                alert('Error : ' + response.data);
+                        }
+                });
+
+                app.factory('UserFactory', function UserFactory($http, API_URL, AuthTokenFactory, $q){
+                        'use strict';
+                        return {
+                                login: login,
+                                logout: logout,
+                                getUser: getUser
+                        };
+
+                        function getUser(){
+                                if(AuthTokenFactory.getToken())
+                                {
+                                        return $http.get(API_URL + '/me');
+                                }else
+                                {
+                                        return $q.reject({data: 'client has no token'});
+                                }
+                        }
+
+                        function login(username, password){
+                                console.log('login with', username, password);
+                                return $http.post(API_URL + "/login_check", {
+                                        "_username": username,
+                                        "_password": password
+                                }).then(function success(response){
+                                        AuthTokenFactory.setToken(response.data.token);
+                                        return response;
+                                });
+                        };
+                        function logout(){
+                                AuthTokenFactory.setToken();
+                        }
+                });
+
+                app.factory('AuthTokenFactory', function AuthTokenFactory($window){
+                        'use strict';
+                        var store = $window.localStorage;
+                        var key = 'auth-token';
+                        return {
+                                getToken : getToken,
+                                setToken : setToken,
+                        };
+
+                        function getToken(){
+                                return store.getItem(key);
+                        }
+
+                        function setToken(token){
+                                if(token){
+                                        store.setItem(key, token);
+                                }else{
+                                        store.removeItem(key);
+                                }
+                        }
+                });
+
+                app.factory('AuthInterceptor', function AuthInterceptor(AuthTokenFactory){
+                        'use strict';
+                        return {
+                                request: addToken
+                        };
+
+                        function addToken(config){
+                                var token = AuthTokenFactory.getToken();
+                                if(token){
+                                        config.headers = config.headers || {};
+                                        config.headers.Authorization = 'Bearer ' + token;
+                                }
+                                return config;
+                        }
+
+
+                });
+            })();
+        </script>
+    </body>
+</html>

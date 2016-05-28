@@ -1,0 +1,14 @@
+{
+  "name": "micro-nodejs",
+  "version": "1.0.0",
+  "description": "micro nodejs application using remote authentication",
+  "main": "app.js",
+  "scripts": {
+    "test": "node app"
+  },
+  "author": "duwab",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.13.4"
+  }
+}

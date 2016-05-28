@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html ng-app="app">
+    <head>
+        <title>cookies authentication</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        <div ng-controller="MainCtrl as vm">
+            <a href="/embed">Back</a>
+            <h1>Auth with cookies</h1>
+            <div ng-hide="vm.user">
+                <form ng-submit="vm.login(vm.username, vm.password)">
+                    <label>Username : <input type="text" ng-model="vm.username"/></label><br>
+                    <label>Password : <input type="password" ng-model="vm.password"/></label><br>
+                    <button type="submit">Login</button><br>
+                </form>
+                <div ng-if="vm.error">
+                    {{vm.error}}
+                </div>
+            </div>
+            <div ng-show="vm.user">
+                <p>Hello {{vm.user.username || 'nobody'}}</p>
+                <button ng-click="vm.logout()">Logout</button><br><br>
+            </div>
+        </div>
+                
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js"></script>
+        <script>
+            (function(){
+                'use strict';
+                var app = angular.module("app", [], function config($httpProvider){
+                        $httpProvider.interceptors.push('AuthInterceptor');
+                });
+
+                app.constant('API_URL', '');
+
+                app.controller('MainCtrl', function(UserFactory){
+                        'use strict';
+                        var vm = this;
+                        this.login = login;
+                        this.logout = logout;
+
+                        //initialization
+                        UserFactory.getUser().then(function success(response){
+                                console.log("getuser result", response.data);
+                                vm.user = response.data;
+                        });
+
+                        function login(username, password){
+                                UserFactory.login(username, password).then(function success(response){
+                                        console.log("your token", response.data.token);
+                                        UserFactory.getUser().then(function(data){
+                                            console.log('me', data);
+                                            vm.user = data.data;
+                                        }, function(err){
+                                            console.log('login error', err);
+                                            if(err.status === 403)
+                                            {
+                                                vm.error = err.data.message;
+                                            }else
+                                            {
+                                                vm.error = "Erreur d'acces au serveur";
+                                            }
+                                        });
+                                }, handleError);
+                        }
+
+                        function logout(){
+                                UserFactory.logout().then(function(){
+                                    vm.user = undefined;
+                                });
+                        }
+
+                        function handleError(response){
+                                alert('Error : ' + response.data);
+                        }
+                });
+
+                app.factory('UserFactory', function UserFactory($http, API_URL, AuthTokenFactory, $q){
+                        'use strict';
+                        return {
+                                login: login,
+                                logout: logout,
+                                getUser: getUser
+                        };
+
+                        function getUser(){
+                                return $http.get(API_URL + '/api/me');
+                        }
+
+                        function login(username, password){
+                                
+                        
+                                return $http.get(API_URL + '/csrf').then(function(data){
+                                    console.log('csrf', data.data);
+                                    console.log('login with', username, password);
+                                    return $http({
+                                        method: 'POST',
+                                        url: API_URL + "/login_check",
+                                        data : "_submit=Log In&_username=" + username + "&_password=" + password+"&_csrf_token="+ data.data,
+                                        headers : {'Content-Type': 'application/x-www-form-urlencoded'} 
+                                    }).then(function (response){
+                                            console.log('login success', response, response.location);
+                                            //AuthTokenFactory.setToken(response.data.token);
+                                            return response;
+                                    }, function(error){
+                                        console.log("login error", error);
+                                        return error;
+                                    });
+                                });
+                        };
+                        function logout(){
+                                return $http.get(API_URL + '/logout');
+                        }
+                });
+
+                app.factory('AuthTokenFactory', function AuthTokenFactory($window){
+                        'use strict';
+                        var store = $window.localStorage;
+                        var key = 'auth-token';
+                        return {
+                                getToken : getToken,
+                                setToken : setToken,
+                        };
+
+                        function getToken(){
+                                return store.getItem(key);
+                        }
+
+                        function setToken(token){
+                                if(token){
+                                        store.setItem(key, token);
+                                }else{
+                                        store.removeItem(key);
+                                }
+                        }
+                });
+
+                app.factory('AuthInterceptor', function AuthInterceptor(AuthTokenFactory){
+                        'use strict';
+                        return {
+                                request: addToken
+                        };
+
+                        function addToken(config){
+                                var token = AuthTokenFactory.getToken();
+                                if(token){
+                                        config.headers = config.headers || {};
+                                        config.headers.Authorization = 'Bearer ' + token;
+                                }
+                                return config;
+                        }
+
+
+                });
+            })();
+        </script>
+    </body>
+</html>
