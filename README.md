@@ -9,6 +9,13 @@ cache, logs, sessions sont en 774 ubuntu:www-data
 pour réajuster ces droits: sfcache
 
 
+composer install
+npm install
+app/config/parameters.yml
+apache configuration
+php bin/console doctrine:schema:update --force
+
+
 jwt private duwab
 
 

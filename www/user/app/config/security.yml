@@ -34,6 +34,10 @@ security:
                 csrf_token_generator: security.csrf.token_manager
             logout:       true
             anonymous:    true
+            remember_me:
+                secret:   '%secret%'
+                lifetime: 604800 # 1 week in seconds
+                path:     /
 
     access_control:
         - { path: ^/jwt/login, roles: IS_AUTHENTICATED_ANONYMOUSLY }
