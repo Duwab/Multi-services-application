@@ -8,9 +8,12 @@ use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use CoreBundle\Entity\User;
 use Stripe\Stripe;
-use Stripe\Charge;
 use Stripe\Token;
+use Symfony\Component\EventDispatcher\EventDispatcher,
+    Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken,
+    Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
 
 class SubscriptionController extends Controller
 {
@@ -25,14 +28,25 @@ class SubscriptionController extends Controller
         ]);
     }
     /**
+     * @Route("/quick-test", name="quick-test")
+     */
+    public function quickTestAction(Request $request)
+    {
+        dump($this->get('security.password_encoder'));
+        die("");
+        $response = new JsonResponse($this->get('security.password_encoder'));
+        return $response;
+    }
+    /**
      * @Route("/offers/subscribe", name="subscribe")
      * @Method({"GET", "POST"})
      */
     public function subscribeAction(Request $request){
         
         //chercher symfony > forms
-        $pseudo = $request->request->get('pseudo');
+        $username = $request->request->get('username');
         $email  = $request->request->get('email');
+        $plainPassword  = $request->request->get('plainPassword');
         $cn     = $request->request->get('card-number');
         $expire = $request->request->get('card-expire-month') . "/" . $request->request->get('card-expire-year');
         $expire_month   = $request->request->get('card-expire-month');
@@ -42,15 +56,16 @@ class SubscriptionController extends Controller
         $plan   = $request->request->get('plan');
         
         $cardInfo = array(
-            "pseudo"        => $pseudo,
+            "username"      => $username,
             "email"         => $email,
-            'card-number'   => $cn,
-            'card-expire'   => $expire,
-            'card-expire-month' => $expire_month,
-            'card-expire-year'  => $expire_year,
-            'card-cvc'      => $cvc,
-            'card-holder'   => $ch,
-            'plan'          => $plan
+            "plainPassword" => $plainPassword,
+            "card-number"   => $cn,
+            "card-expire"   => $expire,
+            "card-expire-month" => $expire_month,
+            "card-expire-year"  => $expire_year,
+            "card-cvc"      => $cvc,
+            "card-holder"   => $ch,
+            "plan"          => $plan
         );
         
         $cardErrors = $this->checkErrors($cardInfo);
@@ -70,13 +85,21 @@ class SubscriptionController extends Controller
             return $response;
         }
         
-        if($stripeRegisterCustomer && isset($stripeRegisterCustomer["object"]) && $stripeRegisterCustomer["object"] === "customer")
+        if($stripeRegisterCustomer 
+                && isset($stripeRegisterCustomer["object"]) 
+                && $stripeRegisterCustomer["object"] === "customer"
+                && isset($stripeRegisterCustomer["id"]))
         {
             $cusId = $stripeRegisterCustomer["id"]; //to save
         }else
         {
-            $cusId = 0;
+            $response->setStatusCode(400);
+            $response->headers->set('Content-Type', 'application/json');
+            return $response;
         }
+        
+        $cardInfo["customer-id"] = $cusId;
+        $this->createAndAuthenticateUser($request, $cardInfo);
         
         $response = new Response();
         $response->setContent(json_encode(array(
@@ -84,10 +107,6 @@ class SubscriptionController extends Controller
             "cardInfo"      => $cardInfo,
             "stripeStatus"  => $stripeRegisterCustomer
         )));
-        if(!$cusId)
-        {
-            $response->setStatusCode(400);
-        }
         $response->headers->set('Content-Type', 'application/json');
         return $response;
     }
@@ -114,13 +133,13 @@ class SubscriptionController extends Controller
             return $response;
         }
     }
+    
     private function registerCard($cardInfo){
 //        https://stripe.com/docs/api/php
 //        https://stripe.com/docs/api/php#create_customer
 //        https://stripe.com/docs/subscriptions/subscribing-customers
         Stripe::setApiKey("sk_test_gVtc7rbsbgJxVPW2KwV5XMxS");
-//        $retrive = Charge::retrieve("ch_18ugP5BcamaAYw0etfDcE54p");
-//        return $retrive;
+        
         try{
             
             $token = Token::create(
@@ -170,7 +189,39 @@ class SubscriptionController extends Controller
         return $customer;
     }
     private function checkErrors($cardInfo){
+//        http://symfony.com/doc/current/doctrine/registration_form.html
         return false;
+    }
+    private function createAndAuthenticateUser($request, $cardInfo){
+//        ajouter un champ user 
+//        http://stackoverflow.com/questions/9550079/how-to-programmatically-login-authenticate-a-user
+        
+        // Create user
+        $user = new User();
+        $user->setUsername($cardInfo["username"]);
+        $user->setEmail($cardInfo["email"]);
+        $user->setEnabled(true);
+        $user->setCustomerId($cardInfo["customer-id"]);
+        $encoder    = $this->container->get('security.password_encoder');
+        $password   = $encoder->encodePassword($user, $cardInfo["plainPassword"]);
+
+        $user->setPassword($password);
+        
+        $em = $this->getDoctrine()->getManager();
+        $em->persist($user);
+        $em->flush();
+        
+        // Authenticate
+        // Here, "public" is the name of the firewall in your security.yml
+        $token = new UsernamePasswordToken($user, $user->getPassword(), "public", $user->getRoles());
+
+        // For older versions of Symfony, use security.context here
+        $this->get("security.token_storage")->setToken($token);
+
+        // Fire the login event
+        // Logging the user in above the way we do it doesn't do this automatically
+        $event = new InteractiveLoginEvent($request, $token);
+        $this->get("event_dispatcher")->dispatch("security.interactive_login", $event);
     }
 }
 

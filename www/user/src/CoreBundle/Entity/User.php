@@ -6,6 +6,8 @@ namespace CoreBundle\Entity;
 use FOS\UserBundle\Model\User as BaseUser;
 use Doctrine\ORM\Mapping as ORM;
 
+//http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/annotations-reference.html
+
 /**
  * @ORM\Entity
  * @ORM\Table(name="fos_user")
@@ -23,5 +25,37 @@ class User extends BaseUser
     {
         parent::__construct();
         // your own logic
+    }
+    
+    /**
+     * 
+     * Stripe customer id
+     * 
+     * @var boolean
+     * @ORM\Column(type="string", length=127, nullable=true)
+     */
+    protected $customerId;
+    
+    /**
+     * 
+     * Get customer Id
+     * 
+     * @return string
+     */
+    
+    public function getCustomerId(){
+        return $this->customerId;
+    }
+    
+    /**
+     * 
+     * Set customer Id
+     * 
+     * @return string
+     */
+    
+    public function setCustomerId($customerId){
+        $this->customerId = $customerId;
+        return $this->customerId;
     }
 }
