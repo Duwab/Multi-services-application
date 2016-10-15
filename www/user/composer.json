@@ -24,7 +24,9 @@
         "friendsofsymfony/user-bundle": "~2.0@dev",
         "lexik/jwt-authentication-bundle": "^1.5",
         "friendsofsymfony/rest-bundle": "^1.7",
-        "nelmio/cors-bundle": "^1.4"
+        "nelmio/cors-bundle": "^1.4",
+        "symfony/assetic-bundle": "^2.8",
+        "stripe/stripe-php": "^4.0"
     },
     "require-dev": {
         "sensio/generator-bundle": "^3.0",

@@ -3,11 +3,28 @@
     <head>
         <meta charset="UTF-8" />
         <title>{% block title %}Welcome!{% endblock %}</title>
-        {% block stylesheets %}{% endblock %}
+        {% block stylesheets %}
+            {% stylesheets 
+                    'assets/bower/bootstrap/dist/css/bootstrap.min.css'
+                    '@CoreBundle/Resources/config/public/css/style.css' 
+                    filter='cssrewrite'
+                    output='css/common-css.css' %}
+                <link rel="stylesheet" href="{{ asset_url }}" />
+            {% endstylesheets %}
+        {% endblock %}
+        <!-- http://stackoverflow.com/questions/33702382/symfony-assetic-doesnt-work -->
         <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}" />
     </head>
     <body>
         {% block body %}{% endblock %}
-        {% block javascripts %}{% endblock %}
+        {% block javascripts %}
+            {% javascripts
+                'assets/bower/jquery/dist/jquery.min.js'
+                'assets/bower/bootstrap/dist/js/bootstrap.min.js'
+                '@CoreBundle/Resources/config/public/js/*'
+                output='css/common-js.js' %}
+                <script src="{{ asset_url }}"></script>
+            {% endjavascripts %}
+        {% endblock %}
     </body>
 </html>

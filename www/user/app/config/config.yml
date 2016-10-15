@@ -98,3 +98,9 @@ nelmio_cors:
             allow_headers: ['Authorization', 'Method', 'Content-Length', 'Content-type', 'Accept', 'Accept-Encoding']   # si cors pb: ['*']
             allow_methods: ['POST', 'PUT', 'GET', 'DELETE']
             max_age: 3600
+            
+assetic:
+    debug:          '%kernel.debug%'
+    use_controller: '%kernel.debug%'
+    filters:
+        cssrewrite: ~

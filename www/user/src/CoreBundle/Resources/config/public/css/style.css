@@ -1,0 +1,11 @@
+.offer-card{
+    max-width: 300px;
+    margin: auto;
+    background: #dbdbff;
+    padding: 10px;
+    text-align: center;
+}
+
+#myModal label{
+    display: block;
+}

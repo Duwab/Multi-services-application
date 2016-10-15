@@ -1,0 +1,83 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div id="wrapper">
+        <div id="container">
+            <h1>Bienvenue</h1>
+            <p>Vous pouvez acheter</p>
+                
+            <div class="col-md-6">
+                <div class="offer-card">
+                    <h3>Offre Normale</h3>
+                    <p>10€/mois</p>
+                    <p>sans engagement</p>
+                    <hr>
+                    <button 
+                         type="button" 
+                         class="btn btn-primary btn-lg launch-subscription" 
+                         offer-id="normal-plan">
+                        Subscribe
+                    </button>
+                </div>
+            </div>
+                
+            <div class="col-md-6">
+                <div class="offer-card">
+                    <h3>Offre Premium</h3>
+                    <p>20€/mois</p>
+                    <p>sans engagement</p>
+                    <hr>
+                    <button 
+                         type="button" 
+                         class="btn btn-primary btn-lg launch-subscription" 
+                         offer-id="premium-plan">
+                        Subscribe
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="myModalLabel">Choisir la formule <span id="name-subscription"></span></h4>
+          </div>
+          <div class="modal-body">
+              <form>
+                  <label>
+                      Pseudo: <input name="pseudo" value="myPseudo"/>
+                  </label>
+                  <label>
+                      Email: <input name="email" value="antoine.duwab+mypseudo@gmail.com"/>
+                  </label>
+                  <label>
+                      Password: <input name="password" type="password"/>
+                  </label>
+                  <label>
+                      Card Number: <input name="card-number" value="4242424242424242"/>
+                  </label>
+                  <label>
+                      Expire: <input name="card-expire-month" placeholder="MM"/> / <input name="card-expire-year" placeholder="YY"/>
+                  </label>
+                  <label>
+                      CVC: <input name="card-cvc" value="123"/>
+                  </label>
+                  <label>
+                      Card holder: <input name="card-holder" value="Jean-Micheng Dard"/>
+                  </label>
+                  <input type="submit" name="submit" style="display:none"/>
+              </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" id="save-subscription">Save changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+{% endblock %}
